@@ -1,11 +1,11 @@
 
-function FCNN() {
+function FCNN(data) {
 
     let randomWeight = () => Math.random() * 2 - 1;
 
 
     /////////////////////////////////////////////////////////////////////////////
-                          ///////    Variables    ///////
+    ///////    Variables    ///////
     /////////////////////////////////////////////////////////////////////////////
 
     var w = window.innerWidth;
@@ -46,10 +46,10 @@ function FCNN() {
     var showArrowheads = false;
     var arrowheadStyle = "empty";
 
-    let sup_map = {'0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹'};
+    let sup_map = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹' };
     let sup = (s) => Array.prototype.map.call(s, (d) => (d in sup_map && sup_map[d]) || d).join('');
 
-    let textFn = (layer_index, layer_width) => ((layer_index === 0 ? "Input" : (layer_index === architecture.length-1 ? "Output" : "Hidden")) + " Layer ∈ ℝ" + sup(layer_width.toString()));
+    let textFn = (layer_index, layer_width) => ((layer_index === 0 ? "Input" : (layer_index === architecture.length - 1 ? "Output" : "Hidden")) + " Layer ∈ ℝ" + sup(layer_width.toString()));
     var nominal_text_size = 12;
     var textWidth = 70;
 
@@ -69,58 +69,63 @@ function FCNN() {
     var text = g.selectAll(".text");
 
     /////////////////////////////////////////////////////////////////////////////
-                          ///////    Methods    ///////
+    ///////    Methods    ///////
     /////////////////////////////////////////////////////////////////////////////
 
-    function redraw({architecture_=architecture,
-                     showBias_=showBias,
-                     showLabels_=showLabels}={}) {
+    function redraw({ architecture_ = architecture,
+        showBias_ = showBias,
+        showLabels_ = showLabels } = {}) {
 
         architecture = architecture_;
         showBias = showBias_;
         showLabels = showLabels_;
 
-        graph.nodes = architecture.map((layer_width, layer_index) => range(layer_width).map(node_index => {return {'id':layer_index+'_'+node_index,'layer':layer_index,'node_index':node_index}}));
-        graph.links = pairWise(graph.nodes).map((nodes) => nodes[0].map(left => nodes[1].map(right => {return right.node_index >= 0 ? {'id':left.id+'-'+right.id, 'source':left.id,'target':right.id,'weight':randomWeight()} : null })));
+        graph.nodes = architecture.map((layer_width, layer_index) => range(layer_width).map(node_index => { return { 'id': layer_index + '_' + node_index, 'layer': layer_index, 'node_index': node_index } }));
+        graph.links = pairWise(graph.nodes).map((nodes) => nodes[0].map(left => nodes[1].map(right => { return right.node_index >= 0 ? { 'id': left.id + '-' + right.id, 'source': left.id, 'target': right.id, 'weight': randomWeight() } : null })));
+        console.log(graph.links)
         graph.nodes = flatten(graph.nodes);
-        graph.links = flatten(graph.links).filter(l => (l && (showBias ? (parseInt(l['target'].split('_')[0]) !== architecture.length-1 ? (l['target'].split('_')[1] !== '0') : true) : true)));
+        graph.links = flatten(graph.links).filter(l => (l && (showBias ? (parseInt(l['target'].split('_')[0]) !== architecture.length - 1 ? (l['target'].split('_')[1] !== '0') : true) : true)));
+        console.log(graph.links)
+        graph.links = data["links"]
+        console.log(graph.links)
 
-        label = architecture.map((layer_width, layer_index) => { return {'id':'layer_'+layer_index+'_label','layer':layer_index,'text':textFn(layer_index, layer_width)}});
+
+        label = architecture.map((layer_width, layer_index) => { return { 'id': 'layer_' + layer_index + '_label', 'layer': layer_index, 'text': textFn(layer_index, layer_width) } });
 
         link = link.data(graph.links, d => d.id);
         link.exit().remove();
         link = link.enter()
-                   .insert("path", ".node")
-                   .attr("class", "link")
-                   .merge(link);
+            .insert("path", ".node")
+            .attr("class", "link")
+            .merge(link);
 
         node = node.data(graph.nodes, d => d.id);
         node.exit().remove();
         node = node.enter()
-                   .append("circle")
-                   .attr("r", nodeDiameter/2)
-                   .attr("class", "node")
-                   .attr("id", function(d) { return d.id; })
-                   .on("mousedown", set_focus)
-                   .on("mouseup", remove_focus)
-                   .merge(node);
+            .append("circle")
+            .attr("r", nodeDiameter / 2)
+            .attr("class", "node")
+            .attr("id", function (d) { return d.id; })
+            .on("mousedown", set_focus)
+            .on("mouseup", remove_focus)
+            .merge(node);
 
         text = text.data(label, d => d.id);
         text.exit().remove();
         text = text.enter()
-                   .append("text")
-                   .attr("class", "text")
-                   .attr("dy", ".35em")
-                   .style("font-size", nominal_text_size+"px")
-                   .merge(text)
-                   .text(function(d) { return (showLabels ? d.text : ""); });
+            .append("text")
+            .attr("class", "text")
+            .attr("dy", ".35em")
+            .style("font-size", nominal_text_size + "px")
+            .merge(text)
+            .text(function (d) { return (showLabels ? d.text : ""); });
 
         style();
     }
 
-    function redistribute({betweenNodesInLayer_=betweenNodesInLayer,
-                           betweenLayers_=betweenLayers,
-                           nnDirection_=nnDirection}={}) {
+    function redistribute({ betweenNodesInLayer_ = betweenNodesInLayer,
+        betweenLayers_ = betweenLayers,
+        nnDirection_ = nnDirection } = {}) {
 
         betweenNodesInLayer = betweenNodesInLayer_;
         betweenLayers = betweenLayers_;
@@ -134,91 +139,91 @@ function FCNN() {
 
         let indices_from_id = (id) => id.split('_').map(x => parseInt(x));
 
-        let x = (layer, node_index) => layer * (betweenLayers + nodeDiameter) + w/2 - (betweenLayers * layer_offsets.length/3);
-        let y = (layer, node_index) => layer_offsets[layer] + node_index * (nodeDiameter + betweenNodesInLayer[layer]) + h/2 - largest_layer_width/2;
+        let x = (layer, node_index) => layer * (betweenLayers + nodeDiameter) + w / 2 - (betweenLayers * layer_offsets.length / 3);
+        let y = (layer, node_index) => layer_offsets[layer] + node_index * (nodeDiameter + betweenNodesInLayer[layer]) + h / 2 - largest_layer_width / 2;
 
-        let xt = (layer, node_index) => layer_offsets[layer] + node_index * (nodeDiameter + betweenNodesInLayer[layer]) + w/2  - largest_layer_width/2;
-        let yt = (layer, node_index) => layer * (betweenLayers + nodeDiameter) + h/2 - (betweenLayers * layer_offsets.length/3);
+        let xt = (layer, node_index) => layer_offsets[layer] + node_index * (nodeDiameter + betweenNodesInLayer[layer]) + w / 2 - largest_layer_width / 2;
+        let yt = (layer, node_index) => layer * (betweenLayers + nodeDiameter) + h / 2 - (betweenLayers * layer_offsets.length / 3);
 
         if (nnDirection == 'up') { x = xt; y = yt; }
 
-        node.attr('cx', function(d) { return x(d.layer, d.node_index); })
-            .attr('cy', function(d) { return y(d.layer, d.node_index); });
+        node.attr('cx', function (d) { return x(d.layer, d.node_index); })
+            .attr('cy', function (d) { return y(d.layer, d.node_index); });
 
         link.attr("d", (d) => "M" + x(...indices_from_id(d.source)) + "," +
-                                    y(...indices_from_id(d.source)) + ", " +
-                                    x(...indices_from_id(d.target)) + "," +
-                                    y(...indices_from_id(d.target)));
+            y(...indices_from_id(d.source)) + ", " +
+            x(...indices_from_id(d.target)) + "," +
+            y(...indices_from_id(d.target)));
 
-        text.attr("x", function(d) { return (nnDirection === 'right' ? x(d.layer, d.node_index) - textWidth/2 : w/2 + largest_layer_width/2 + 20 ); })
-            .attr("y", function(d) { return (nnDirection === 'right' ? h/2 + largest_layer_width/2 + 20       : y(d.layer, d.node_index) ); });
+        text.attr("x", function (d) { return (nnDirection === 'right' ? x(d.layer, d.node_index) - textWidth / 2 : w / 2 + largest_layer_width / 2 + 20); })
+            .attr("y", function (d) { return (nnDirection === 'right' ? h / 2 + largest_layer_width / 2 + 20 : y(d.layer, d.node_index)); });
 
     }
 
-    function style({edgeWidthProportional_=edgeWidthProportional,
-                    edgeWidth_=edgeWidth,
-                    edgeOpacityProportional_=edgeOpacityProportional,
-                    edgeOpacity_=edgeOpacity,
-                    negativeEdgeColor_=negativeEdgeColor,
-                    positiveEdgeColor_=positiveEdgeColor,
-                    edgeColorProportional_=edgeColorProportional,
-                    defaultEdgeColor_=defaultEdgeColor,
-                    nodeDiameter_=nodeDiameter,
-                    nodeColor_=nodeColor,
-                    nodeBorderColor_=nodeBorderColor,
-                    showArrowheads_=showArrowheads,
-                    arrowheadStyle_=arrowheadStyle}={}) {
+    function style({ edgeWidthProportional_ = edgeWidthProportional,
+        edgeWidth_ = edgeWidth,
+        edgeOpacityProportional_ = edgeOpacityProportional,
+        edgeOpacity_ = edgeOpacity,
+        negativeEdgeColor_ = negativeEdgeColor,
+        positiveEdgeColor_ = positiveEdgeColor,
+        edgeColorProportional_ = edgeColorProportional,
+        defaultEdgeColor_ = defaultEdgeColor,
+        nodeDiameter_ = nodeDiameter,
+        nodeColor_ = nodeColor,
+        nodeBorderColor_ = nodeBorderColor,
+        showArrowheads_ = showArrowheads,
+        arrowheadStyle_ = arrowheadStyle } = {}) {
         // Edge Width
-        edgeWidthProportional   = edgeWidthProportional_;
-        edgeWidth               = edgeWidth_;
-        weightedEdgeWidth       = d3.scaleLinear().domain([0, 1]).range([0, edgeWidth]);
+        edgeWidthProportional = edgeWidthProportional_;
+        edgeWidth = edgeWidth_;
+        weightedEdgeWidth = d3.scaleLinear().domain([0, 1]).range([0, edgeWidth]);
         // Edge Opacity
         edgeOpacityProportional = edgeOpacityProportional_;
-        edgeOpacity             = edgeOpacity_;
+        edgeOpacity = edgeOpacity_;
         // Edge Color
-        defaultEdgeColor        = defaultEdgeColor_;
-        edgeColorProportional   = edgeColorProportional_;
-        negativeEdgeColor       = negativeEdgeColor_;
-        positiveEdgeColor       = positiveEdgeColor_;
-        weightedEdgeColor       = d3.scaleLinear().domain([-1, 0, 1]).range([negativeEdgeColor, "white", positiveEdgeColor]);
+        defaultEdgeColor = defaultEdgeColor_;
+        edgeColorProportional = edgeColorProportional_;
+        negativeEdgeColor = negativeEdgeColor_;
+        positiveEdgeColor = positiveEdgeColor_;
+        weightedEdgeColor = d3.scaleLinear().domain([-1, 0, 1]).range([negativeEdgeColor, "white", positiveEdgeColor]);
         // Node Styles
-        nodeDiameter            = nodeDiameter_;
-        nodeColor               = nodeColor_;
-        nodeBorderColor         = nodeBorderColor_;
+        nodeDiameter = nodeDiameter_;
+        nodeColor = nodeColor_;
+        nodeBorderColor = nodeBorderColor_;
         // Arrowheads
-        showArrowheads          = showArrowheads_;
-        arrowheadStyle          = arrowheadStyle_;
+        showArrowheads = showArrowheads_;
+        arrowheadStyle = arrowheadStyle_;
 
-        link.style("stroke-width", function(d) {
+        link.style("stroke-width", function (d) {
             if (edgeWidthProportional) { return weightedEdgeWidth(Math.abs(d.weight)); } else { return edgeWidth; }
         });
 
-        link.style("stroke-opacity", function(d) {
+        link.style("stroke-opacity", function (d) {
             if (edgeOpacityProportional) { return weightedEdgeOpacity(Math.abs(d.weight)); } else { return edgeOpacity; }
         });
 
-        link.style("stroke", function(d) {
+        link.style("stroke", function (d) {
             if (edgeColorProportional) { return weightedEdgeColor(d.weight); } else { return defaultEdgeColor; }
         });
 
         link.attr('marker-end', showArrowheads ? "url(#arrow)" : '');
-        marker.attr('refX', nodeDiameter*1.4 + 12);
+        marker.attr('refX', nodeDiameter * 1.4 + 12);
         arrowhead.style("fill", arrowheadStyle === 'empty' ? "none" : defaultEdgeColor);
 
-        node.attr("r", nodeDiameter/2);
+        node.attr("r", nodeDiameter / 2);
         node.style("fill", nodeColor);
         node.style("stroke", nodeBorderColor);
 
     }
 
     /////////////////////////////////////////////////////////////////////////////
-                          ///////    Focus    ///////
+    ///////    Focus    ///////
     /////////////////////////////////////////////////////////////////////////////
 
     function set_focus(d) {
         d3.event.stopPropagation();
-        node.style("opacity", function(o) { return (d == o || o.layer == d.layer - 1) ? 1 : 0.1; });
-        link.style("opacity", function(o) { return (o.target == d.id) ? 1 : 0.02; });
+        node.style("opacity", function (o) { return (d == o || o.layer == d.layer - 1) ? 1 : 0.1; });
+        link.style("opacity", function (o) { return (o.target == d.id) ? 1 : 0.02; });
     }
 
     function remove_focus() {
@@ -228,12 +233,12 @@ function FCNN() {
     }
 
     /////////////////////////////////////////////////////////////////////////////
-                          ///////    Zoom & Resize   ///////
+    ///////    Zoom & Resize   ///////
     /////////////////////////////////////////////////////////////////////////////
 
     svg.call(d3.zoom()
-               .scaleExtent([1 / 2, 8])
-               .on("zoom", zoomed));
+        .scaleExtent([1 / 2, 8])
+        .on("zoom", zoomed));
 
     function zoomed() { g.attr("transform", d3.event.transform); }
 
@@ -248,16 +253,16 @@ function FCNN() {
     resize();
 
     /////////////////////////////////////////////////////////////////////////////
-                          ///////    Return    ///////
+    ///////    Return    ///////
     /////////////////////////////////////////////////////////////////////////////
 
     return {
-        'redraw'           : redraw,
-        'redistribute'     : redistribute,
-        'style'            : style,
+        'redraw': redraw,
+        'redistribute': redistribute,
+        'style': style,
 
-        'graph'            : graph,
-        'link'             : link
+        'graph': graph,
+        'link': link
     }
 
 }
